@@ -352,7 +352,7 @@ async function scrap_video(){
         LIST_VIDEOS.push(video);
         console.log("[STATUS]: Video encontrado "+video);
   
-        var final_name = slugfy(video.split('/')[4]);
+        var final_name = video.split('/')[4];
   
         real_aula = COUNT_AULAS + 1;
   
@@ -373,7 +373,6 @@ async function scrap_video(){
       } catch (e) {
         console.log('[ERROR] : Não foi possivel obter o vídeo, tentando novamente... ');
         await browser.close();
-        scrap_video();
       }
     }else{//Aqui é caso a atividade seja um texto ou outra coisa que não seja vídeo
       try{
@@ -381,7 +380,6 @@ async function scrap_video(){
           console.log('[WARNING]: URL TIMEOUT Tentando pegar conteudo da página...');
         });
       }catch(e){
-        scrap_video();
       }
     
       try {
@@ -397,7 +395,7 @@ async function scrap_video(){
         var final_name = "atividade-"+real_atividades+"-"+slugfy(title);
   
         var file_path = __dirname+"/downloads/"+URL_COURSE.split('/')[4]+"/Aula-"+real_aula;
-        console.log(html)
+        //console.log(html)
   
         mkdirp(file_path, function(err) {if(err){console.log(err)}});
   
@@ -405,26 +403,24 @@ async function scrap_video(){
   
         console.log("[STATUS]: Baixando HTML: " + final_name);
 
-        // await fs.writeFile(encodeURI(path)+".html", html, function(erro) {
+        await fs.writeFile(encodeURI(path)+".html", html, function(erro) {
 
-        //   if(erro) {
-        //       throw erro;
-        //       scrap_video();
-        //   }
+          if(erro) {
+              console.log(erro);
+              scrap_video();
+          }
     
-        //   console.log("[STATUS]: Arquivo HTML Salvo com sucesso");
-        //   COUNT_ATIVIDADES++;
-        //   saveState();
-        // }); 
+          console.log("[STATUS]: Arquivo HTML Salvo com sucesso");
+          COUNT_ATIVIDADES++;
+          saveState();
+        }); 
   
         await browser.close();
        
       } catch (e) {
         console.log('[ERROR] : Não foi possivel obter o HTML, tentando novamente... ');
-        scrap_video();
       }
     }
-
         var FIX_TOTAL_AULAS = TOTAL_AULAS - 1; //Fixa total de aulas de acordo com contagem do array, evitando sobra de 1 elemento.
         
         console.log('[STATUS]: CURSOS:'+COUNT_OPERATION+'/'+TOTAL_OPERATION+' ATIVIDADES: '+COUNT_ATIVIDADES+'/'+TOTAL_ATIVIDADES + ' AULAS: '+COUNT_AULAS+'/'+TOTAL_AULAS);
