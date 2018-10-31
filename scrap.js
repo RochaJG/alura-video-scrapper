@@ -13,7 +13,7 @@ if(args.onlyCLI != "" && args.onlyCLI != null){
   HANDLESS = args.onlyCLI;
 }
 
-const GLOBAL_CONFIG = {ignoreHTTPSErrors:true, headless: false};
+const GLOBAL_CONFIG = {ignoreHTTPSErrors:true, headless: true};
 
 const USERNAME_SELECTOR = '#login-email';
 const PASSWORD_SELECTOR = '#password';
