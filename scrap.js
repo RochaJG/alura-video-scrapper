@@ -3,6 +3,7 @@ var fs = require('fs');
 const Axios = require('axios')
 const args = require('yargs').argv;
 const mkdirp = require('mkdirp');
+var sanitize = require("sanitize-filename");
 
 var username;
 var password;
@@ -44,8 +45,8 @@ function slugfy (str) {
   str = str.toLowerCase();
 
   // remove accents, swap ñ for n, etc
-  var from = "àáãäâèéëêìíïîòóöôùúüûñç·/_,:; ";
-  var to   = "aaaaaeeeeiiiioooouuuunc-------";
+  var from = "!#$¨&*%@àáãäâèéëêìíïîòóöôùúüûñç·/_,:; ";
+  var to   = "--------aaaaaeeeeiiiioooouuuunc-------";
 
   for (var i=0, l=from.length ; i<l ; i++) {
       str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
@@ -57,72 +58,6 @@ function slugfy (str) {
 
   return str;
 }
-
-
-async function saveState(){
-
-  var fs = require('fs');
-
-  await fs.unlink('saveState.db', (err) => {
-    //if (err) throw err;
-  });
-
-  await fs.unlink('QUEUE_AULAS.db', (err) => {
-    //if (err) throw err;
-  });
-
-  await fs.unlink('QUEUE_TIPO_ATIVIDADES.db', (err) => {
-    //if (err) throw err;
-  });
-
-  await fs.unlink('QUEUE_ATIVIDADES.db', (err) => {
-    //if (err) throw err;
-  });
-  await fs.unlink('LIST_OPERATION.db', (err) => {
-    //if (err) throw err;
-  });
-
-  console.log("[STATUS]: Salvando estado da aplicação")
-  await fs.writeFile("saveState.db", COUNT_AULAS+"|"+TOTAL_AULAS+"|"+COUNT_ATIVIDADES+"|"+TOTAL_ATIVIDADES+"|"+COUNT_OPERATION+"|"+TOTAL_OPERATION+"|"+TOTAL_ESCRITAS, function(erro) {
-
-      if(erro) {
-          throw erro;
-      }
-      //console.log("[STATUS]: SAVESTATE.DB salvo com sucesso");
-  }); 
-
- /* for(var i in QUEUE_AULAS){
-    await fs.appendFile('QUEUE_AULAS.db', QUEUE_AULAS[i]+"\r\n", function (err) {
-      if (err) {
-        console.log("[ERROR]: SAVE_STATE(QUEUE_AULAS): "+ err);
-      } else {
-       // console.log("[STATUS]: QUEUE_AULAS salvo com sucesso");
-      }
-    })
-  }
-
-  for(var i in QUEUE_ATIVIDADES){
-    await fs.appendFile('QUEUE_ATIVIDADES.db', QUEUE_ATIVIDADES[i]+"|"+QUEUE_TIPO_ATIVIDADES[i]+"\r\n", function (err) {
-      if (err) {
-        console.log("[ERROR]: SAVE_STATE(QUEUE_ATIVIDADES): "+ err);
-      } else {
-        //console.log("[STATUS]: QUEUE_ATIVIDADES salvo com sucesso");
-      }
-    })
-  }
-
-  for(var i in LIST_OPERATION){
-     await fs.appendFile('LIST_OPERATION.db', LIST_OPERATION[i]+"\r\n", function (err) {
-      if (err) {
-        console.log("[ERROR]: SAVE_STATE(LIST_OPERATION): "+ err);
-      } else {
-        //console.log("[STATUS]: LIST_OPERATION salvo com sucesso");
-      }
-    })
-  }*/
-
-}
-
 
 async function run() {
   QUEUE_AULAS = [];
@@ -215,14 +150,17 @@ async function scrap_aulas(){
   
 
   if(OPERATION_MODE == 'single'){
+
     await page.goto(args.course, {waitUntil: 'domcontentloaded'});
     URL_COURSE = args.course;
   }else if(OPERATION_MODE == 'list'){
+	  if(LIST_OPERATION[COUNT_OPERATION] == 'undefinied'){
+		  scrap_aulas();
+	  }
     await page.goto(LIST_OPERATION[COUNT_OPERATION], {waitUntil: 'domcontentloaded'});
     URL_COURSE = LIST_OPERATION[COUNT_OPERATION];
     
     COUNT_OPERATION++;
-    saveState();
   }
 
   console.log("[STATUS]: Acessando a página do curso: " + URL_COURSE);
@@ -304,7 +242,6 @@ async function scrap_atividades(){
 
   if(COUNT_ATIVIDADES >= TOTAL_ATIVIDADES){
     COUNT_AULAS++;
-    saveState();
     //QUEUE_AULAS = [];
   }
 
@@ -318,7 +255,6 @@ async function scrap_video(){
 
   if(COUNT_ATIVIDADES >= TOTAL_ATIVIDADES){
     COUNT_AULAS++;
-    saveState();
     scrap_atividades();
     
   }else{
@@ -374,6 +310,7 @@ async function scrap_video(){
         console.log('[ERROR] : Não foi possivel obter o vídeo, tentando novamente... ');
         await browser.close();
       }
+      
     }else{//Aqui é caso a atividade seja um texto ou outra coisa que não seja vídeo
       try{
         await page.waitForNavigation({timeout:50000}).then(()=>{},()=>{
@@ -392,7 +329,7 @@ async function scrap_video(){
   
         real_atividades = COUNT_ATIVIDADES + 1;
 
-        var final_name = "atividade-"+real_atividades+"-"+slugfy(title);
+        var final_name = "atividade-"+real_atividades+"-"+sanitize(title);
   
         var file_path = __dirname+"/downloads/"+URL_COURSE.split('/')[4]+"/Aula-"+real_aula;
         //console.log(html)
@@ -403,7 +340,7 @@ async function scrap_video(){
   
         console.log("[STATUS]: Baixando HTML: " + final_name);
 
-        await fs.writeFile(encodeURI(path)+".html", html, function(erro) {
+        await fs.writeFile(path+".html", html, function(erro) {
 
           if(erro) {
               console.log(erro);
@@ -412,18 +349,18 @@ async function scrap_video(){
     
           console.log("[STATUS]: Arquivo HTML Salvo com sucesso");
           COUNT_ATIVIDADES++;
-          saveState();
         }); 
   
         await browser.close();
        
       } catch (e) {
         console.log('[ERROR] : Não foi possivel obter o HTML, tentando novamente... ');
+		await browser.close();
       }
     }
         var FIX_TOTAL_AULAS = TOTAL_AULAS - 1; //Fixa total de aulas de acordo com contagem do array, evitando sobra de 1 elemento.
         
-        console.log('[STATUS]: CURSOS:'+COUNT_OPERATION+'/'+TOTAL_OPERATION+' ATIVIDADES: '+COUNT_ATIVIDADES+'/'+TOTAL_ATIVIDADES + ' AULAS: '+COUNT_AULAS+'/'+TOTAL_AULAS);
+        console.log('[STATUS]: CURSOS:'+COUNT_OPERATION+'/'+TOTAL_OPERATION+' ATIVIDADES: '+COUNT_ATIVIDADES+'/'+TOTAL_ATIVIDADES + ' AULAS: '+COUNT_AULAS+'/'+FIX_TOTAL_AULAS);
         
         if(COUNT_AULAS >= FIX_TOTAL_AULAS && COUNT_ATIVIDADES >= TOTAL_ATIVIDADES){
             if(OPERATION_MODE == 'single'){
@@ -461,7 +398,6 @@ async function downloadVideo(path, url) {
   return new Promise((resolve, reject) => {
     response.data.on('end', () => {
       COUNT_ATIVIDADES++;
-      saveState();
       resolve()
     })
 
@@ -531,4 +467,3 @@ async function get_args(){
   }
 }
 get_args();
-
