@@ -1,4 +1,7 @@
 # Alura Video Scrapper
+<p align="center"> 
+<img src="https://i.imgur.com/JTQ5nUR.png"/>
+</p>
 Baixe seus cursos e assista offline em dispositivos que não suportam a aplicação Alura ou em zonas de bloqueio de dns como em seu trabalho ou escola. Ou seja, em qualquer lugar!
 
 ### !!! ALERTA:  Use por sua conta e risco.
