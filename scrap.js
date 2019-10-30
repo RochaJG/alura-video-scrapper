@@ -307,7 +307,7 @@ async function scrap_video(){
         await browser.close();
        
       } catch (e) {
-        console.log('[ERROR] : Não foi possivel obter o vídeo, tentando novamente... ');
+        console.error('[ERROR] : Não foi possivel obter o vídeo, tentando novamente... ');
         await browser.close();
       }
       
@@ -354,7 +354,7 @@ async function scrap_video(){
         await browser.close();
        
       } catch (e) {
-        console.log('[ERROR] : Não foi possivel obter o HTML, tentando novamente... ');
+        console.error('[ERROR] : Não foi possivel obter o HTML, tentando novamente... ');
 		await browser.close();
       }
     }
